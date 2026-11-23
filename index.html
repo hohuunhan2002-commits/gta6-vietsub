@@ -56,6 +56,15 @@ body.pfs #closeFs,#stage:fullscreen #closeFs{display:block}
 #rotate{display:none;position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 12px);z-index:60;text-align:center;color:var(--muted);font-size:13px;pointer-events:none}
 @media (orientation:portrait){body.pfs #rotate{display:block}}
 </style>
+<style id="v3">
+#sub{bottom:3.6%}
+#band{position:absolute;left:0;right:0;bottom:0;height:12.5%;z-index:1;pointer-events:none;background:rgba(0,0,0,.55);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);-webkit-mask-image:linear-gradient(to top,#000 78%,transparent);mask-image:linear-gradient(to top,#000 78%,transparent)}
+body.nocover #band{display:none}
+body.nocover #sub{bottom:12%}
+body.pfs #stage,#stage:fullscreen{width:auto;height:auto;container-type:size}
+body.pfs #box,#stage:fullscreen #box{width:min(100cqw, calc(100cqh * 16 / 9))}
+@media (orientation:landscape) and (max-height:520px){html,body{background:#000}#stage{height:auto;container-type:size}#box{width:min(100cqw, calc(100cqh * 16 / 9))}}
+</style>
 </head>
 <body>
 <header>
@@ -66,6 +75,7 @@ body.pfs #closeFs,#stage:fullscreen #closeFs{display:block}
   <div id="stage">
     <div id="box">
       <div id="yt"></div>
+      <div id="band"></div>
       <div id="sub"><span id="subText"></span></div>
     </div>
     <button id="closeFs" aria-label="Thoát toàn màn hình">✕</button>
@@ -75,13 +85,14 @@ body.pfs #closeFs,#stage:fullscreen #closeFs{display:block}
     <button id="smaller" aria-label="Chữ nhỏ hơn">A−</button>
     <span class="val" id="sizeVal">100%</span>
     <button id="bigger" aria-label="Chữ to hơn">A+</button>
+    <button id="cover">Che sub Anh: Bật</button>
     <span class="spacer"></span>
     <button id="early" aria-label="Phụ đề sớm hơn">−0.5s</button>
     <span class="val" id="offVal">lệch 0s</span>
     <button id="late" aria-label="Phụ đề trễ hơn">+0.5s</button>
   </div>
   <div id="status">Đang tải…</div>
-  <div id="tip">Trên điện thoại: chỉ cần <b>xoay ngang</b> là video tự phủ kín màn hình. Muốn mất luôn thanh địa chỉ của Safari: bấm <b>Chia sẻ → Thêm vào MH chính</b>, rồi mở từ biểu tượng ngoài màn hình chính.</div>
+  <div id="tip">Trên điện thoại: chỉ cần <b>xoay ngang</b> là video tự phủ kín màn hình. Dòng chữ tiếng Anh nhỏ là phụ đề có sẵn của game nằm trong video, trang sẽ làm mờ nó đi (nút Che sub Anh). Muốn mất luôn thanh địa chỉ của Safari: bấm <b>Chia sẻ → Thêm vào MH chính</b>, rồi mở từ biểu tượng ngoài màn hình chính.</div>
 </main>
 <div id="rotate">Xoay ngang điện thoại để xem to hơn</div>
 
@@ -169,6 +180,10 @@ function exitFs(){
 $('fsBtn').addEventListener('click', enterFs);
 $('closeFs').addEventListener('click', exitFs);
 
+let cover = store.get('cover', true);
+function applyCover(){ document.body.classList.toggle('nocover', !cover); $('cover').textContent = 'Che sub Anh: ' + (cover ? 'Bật' : 'Tắt'); }
+applyCover();
+$('cover').addEventListener('click', () => { cover = !cover; store.set('cover', cover); applyCover(); });
 $('smaller').addEventListener('click', () => { size = Math.max(.6, +(size - .1).toFixed(2)); store.set('size', size); applyPrefs(); });
 $('bigger').addEventListener('click', () => { size = Math.min(2, +(size + .1).toFixed(2)); store.set('size', size); applyPrefs(); });
 $('early').addEventListener('click', () => { offset = +(offset - .5).toFixed(1); store.set('offset', offset); applyPrefs(); lastIdx = -2; });
