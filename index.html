@@ -3,6 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GTA6 Vietsub">
+<meta name="theme-color" content="#000000">
+<link rel="manifest" href="manifest.json">
 <title>GTA 6 Vietsub</title>
 <style>
 :root{--bg:#0d0b14;--ink:#f3eefc;--muted:#a59fb6;--pink:#ff4fa3;--teal:#2de0d0;--sub:1}
@@ -11,30 +17,44 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui
 header{padding:14px max(4vw,14px) 10px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
 h1{margin:0;font-size:clamp(20px,3.4vw,30px);line-height:1.1;background:linear-gradient(90deg,var(--pink),var(--teal));-webkit-background-clip:text;background-clip:text;color:transparent}
 header small{color:var(--muted)}
-main{max-width:1200px;margin:0 auto;padding:0 max(2vw,0px)}
-#stage{position:relative;width:100%;aspect-ratio:16/9;background:#000;container-type:inline-size;overflow:hidden}
-#stage iframe,#yt{position:absolute;inset:0;width:100%;height:100%;border:0}
-#sub{position:absolute;left:5%;right:5%;bottom:13%;text-align:center;pointer-events:none;z-index:2}
+main{max-width:1200px;margin:0 auto}
+#stage{position:relative;width:100%;background:#000;display:flex;align-items:center;justify-content:center}
+#box{position:relative;width:100%;aspect-ratio:16/9;container-type:inline-size;overflow:hidden;background:#000}
+#box iframe,#yt{position:absolute;inset:0;width:100%;height:100%;border:0}
+#sub{position:absolute;left:5%;right:5%;bottom:12%;text-align:center;pointer-events:none;z-index:2}
 #sub span{display:inline;padding:.12em .45em;border-radius:.25em;background:rgba(0,0,0,.62);color:#fff;
-  font-weight:600;font-size:calc(var(--sub) * clamp(14px,3.3cqw,46px));line-height:1.45;
+  font-weight:600;font-size:calc(var(--sub) * clamp(13px,3.2cqw,46px));line-height:1.45;
   -webkit-box-decoration-break:clone;box-decoration-break:clone;text-shadow:0 1px 2px #000}
 #sub span:empty{display:none}
-#closeFs{display:none;position:absolute;top:max(10px,env(safe-area-inset-top));right:max(10px,env(safe-area-inset-right));z-index:3;
-  width:44px;height:44px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;font-size:22px}
+#closeFs{display:none;position:absolute;top:calc(env(safe-area-inset-top) + 8px);right:calc(env(safe-area-inset-right) + 8px);z-index:3;
+  width:40px;height:40px;border-radius:50%;border:0;background:rgba(0,0,0,.45);color:#fff;font-size:18px;opacity:.7}
 .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:12px max(2vw,10px)}
 .bar button{min-height:44px;padding:0 14px;border-radius:10px;border:1px solid #3a3450;background:#1b1726;color:var(--ink);font:inherit;font-size:15px}
 .bar button:active{background:#2a2340}
 .bar .pri{background:var(--pink);border-color:var(--pink);color:#160812;font-weight:700}
 .bar .val{color:var(--muted);font-size:14px;min-width:4.5em;text-align:center}
 .spacer{flex:1}
-#status{color:var(--muted);font-size:13px;padding:0 max(2vw,10px) 24px}
-/* pseudo fullscreen (iPhone) */
+#status{color:var(--muted);font-size:13px;padding:0 max(2vw,10px) 8px}
+#tip{color:var(--muted);font-size:13px;padding:0 max(2vw,10px) 24px}
+#tip b{color:var(--ink)}
+/* full-screen layout: video box is always 16:9, centred, fitted inside the screen */
 body.pfs{overflow:hidden}
-body.pfs #stage{position:fixed;inset:0;z-index:50;aspect-ratio:auto;width:100vw;height:100dvh;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+body.pfs #stage,#stage:fullscreen{position:fixed;inset:0;z-index:50;width:100vw;height:100vh;height:100dvh;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+body.pfs #box,#stage:fullscreen #box{width:min(100%, calc((100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)) * 16 / 9));width:min(100%, calc(100vh * 16 / 9))}
+@supports (height:100dvh){body.pfs #box,#stage:fullscreen #box{width:min(100%, calc((100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)) * 16 / 9))}}
 body.pfs #closeFs,#stage:fullscreen #closeFs{display:block}
-#stage:fullscreen{aspect-ratio:auto;width:100vw;height:100vh}
-@media (orientation:portrait){body.pfs #rotate{display:flex}}
-#rotate{display:none;position:fixed;inset:auto 0 0 0;z-index:60;justify-content:center;padding:10px;color:var(--muted);font-size:13px;pointer-events:none}
+/* phone turned sideways: fill the screen automatically, like the YouTube app */
+@media (orientation:landscape) and (max-height:520px){
+  body{overflow:hidden}
+  header,.bar,#status,#tip{display:none}
+  #stage{position:fixed;inset:0;z-index:50;height:100dvh;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+  #box{width:min(100%, calc((100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)) * 16 / 9))}
+  #closeFs{display:none!important}
+}
+#rotate{display:none;position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 12px);z-index:60;text-align:center;color:var(--muted);font-size:13px;pointer-events:none}
+@media (orientation:portrait){body.pfs #rotate{display:block}}
 </style>
 </head>
 <body>
@@ -44,8 +64,10 @@ body.pfs #closeFs,#stage:fullscreen #closeFs{display:block}
 </header>
 <main>
   <div id="stage">
-    <div id="yt"></div>
-    <div id="sub"><span id="subText"></span></div>
+    <div id="box">
+      <div id="yt"></div>
+      <div id="sub"><span id="subText"></span></div>
+    </div>
     <button id="closeFs" aria-label="Thoát toàn màn hình">✕</button>
   </div>
   <div class="bar">
@@ -59,6 +81,7 @@ body.pfs #closeFs,#stage:fullscreen #closeFs{display:block}
     <button id="late" aria-label="Phụ đề trễ hơn">+0.5s</button>
   </div>
   <div id="status">Đang tải…</div>
+  <div id="tip">Trên điện thoại: chỉ cần <b>xoay ngang</b> là video tự phủ kín màn hình. Muốn mất luôn thanh địa chỉ của Safari: bấm <b>Chia sẻ → Thêm vào MH chính</b>, rồi mở từ biểu tượng ngoài màn hình chính.</div>
 </main>
 <div id="rotate">Xoay ngang điện thoại để xem to hơn</div>
 
@@ -72,7 +95,7 @@ const store = {
   set(k, v){ try{ localStorage.setItem(KEY+k, JSON.stringify(v)); }catch(e){} }
 };
 
-let subs = [];           // [{s, e, t}]
+let subs = [];
 let player = null, lastIdx = -1;
 let size = store.get('size', 1), offset = store.get('offset', 0);
 const resumeAt = store.get('pos', 0);
@@ -101,6 +124,8 @@ function find(t){
   return (ans >= 0 && t < subs[ans].e) ? ans : -1;
 }
 
+function hideYtCaptions(){ try{ player.unloadModule('captions'); }catch(e){} try{ player.unloadModule('cc'); }catch(e){} }
+
 let saveTick = 0;
 function tick(){
   if (player && player.getCurrentTime){
@@ -116,16 +141,22 @@ window.onYouTubeIframeAPIReady = function(){
   player = new YT.Player('yt', {
     videoId: VIDEO,
     playerVars: { playsinline: 1, rel: 0, iv_load_policy: 3, cc_load_policy: 0, fs: 0, start: resumeAt > 10 ? resumeAt : 0, origin: location.origin },
-    events: { onStateChange: e => { if (e.data === 2) store.set('pos', Math.floor(player.getCurrentTime())); } }
+    events: {
+      onReady: hideYtCaptions,
+      onApiChange: hideYtCaptions,
+      onStateChange: e => {
+        if (e.data === 1) hideYtCaptions();
+        if (e.data === 2) store.set('pos', Math.floor(player.getCurrentTime()));
+      }
+    }
   });
 };
 const tag = document.createElement('script'); tag.src = 'https://www.youtube.com/iframe_api'; document.head.appendChild(tag);
 
-// Fullscreen: real fullscreen where supported, CSS fullscreen on iPhone
 const stage = $('stage');
-function canRealFs(){ return !!(stage.requestFullscreen || stage.webkitRequestFullscreen) && !/iPhone|iPod/.test(navigator.userAgent); }
+const isIOS = /iPhone|iPod/.test(navigator.userAgent);
 function enterFs(){
-  if (canRealFs()){
+  if (!isIOS && (stage.requestFullscreen || stage.webkitRequestFullscreen)){
     const p = stage.requestFullscreen ? stage.requestFullscreen() : stage.webkitRequestFullscreen();
     if (p && p.then) p.then(() => { try{ screen.orientation.lock('landscape').catch(()=>{}); }catch(e){} }).catch(() => document.body.classList.add('pfs'));
   } else document.body.classList.add('pfs');
