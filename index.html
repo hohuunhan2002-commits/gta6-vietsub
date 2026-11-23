@@ -109,7 +109,8 @@ const store = {
 let subs = [];
 let player = null, lastIdx = -1;
 let size = store.get('size', 1), offset = store.get('offset', 0);
-const resumeAt = store.get('pos', 0);
+const urlT = +(new URLSearchParams(location.search).get('t') || 0);
+const resumeAt = urlT > 0 ? urlT : store.get('pos', 0);
 
 function fmt(sec){ sec = Math.floor(sec); const h = Math.floor(sec/3600), m = Math.floor(sec%3600/60), s = sec%60;
   return (h? h+':' : '') + String(m).padStart(h?2:1,'0') + ':' + String(s).padStart(2,'0'); }
@@ -127,8 +128,9 @@ fetch('subs-vi.json', {cache:'no-cache'}).then(r => r.json()).then(rows => {
     const next = rows[i+1] ? rows[i+1][0] : r[0] + 6;
     return { s: r[0], e: Math.min(next, r[0] + 7), t: r[1] };
   });
-  const lastEnd = subs.length ? subs[subs.length-1].e : 0;
-  $('status').textContent = 'Đã dịch tới ' + fmt(lastEnd) + ' / 36:05:58 (' + subs.length + ' câu).' + (resumeAt > 10 ? ' Tiếp tục từ ' + fmt(resumeAt) + '.' : '');
+  const ranges = [];
+  for (const x of subs){ const r = ranges[ranges.length-1]; if (r && x.s - r[1] < 600) r[1] = x.e; else ranges.push([x.s, x.e]); }
+  $('status').textContent = 'Đã dịch: ' + ranges.map(r => fmt(r[0]) + '–' + fmt(r[1])).join(', ') + ' (tổng 36:05:58).' + (resumeAt > 10 ? ' Tiếp tục từ ' + fmt(resumeAt) + '.' : '');
 }).catch(() => { $('status').textContent = 'Không tải được file phụ đề.'; });
 
 function find(t){
