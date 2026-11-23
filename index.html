@@ -123,10 +123,12 @@ applyPrefs();
 
 fetch('subs-vi.json', {cache:'no-cache'}).then(r => r.json()).then(rows => {
   subs = rows.map((r, i) => {
+    if (r.length > 2) return { s: r[0], e: r[1], t: r[2] };
     const next = rows[i+1] ? rows[i+1][0] : r[0] + 6;
     return { s: r[0], e: Math.min(next, r[0] + 7), t: r[1] };
   });
-  $('status').textContent = 'Đã tải ' + subs.filter(x => x.t).length + ' câu phụ đề.' + (resumeAt > 10 ? ' Tiếp tục từ ' + fmt(resumeAt) + '.' : '');
+  const lastEnd = subs.length ? subs[subs.length-1].e : 0;
+  $('status').textContent = 'Đã dịch tới ' + fmt(lastEnd) + ' / 36:05:58 (' + subs.length + ' câu).' + (resumeAt > 10 ? ' Tiếp tục từ ' + fmt(resumeAt) + '.' : '');
 }).catch(() => { $('status').textContent = 'Không tải được file phụ đề.'; });
 
 function find(t){
