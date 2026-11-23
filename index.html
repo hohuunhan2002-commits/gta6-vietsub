@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GTA 6 Vietsub</title>
+<style>
+:root{--bg:#0d0b14;--ink:#f3eefc;--muted:#a59fb6;--pink:#ff4fa3;--teal:#2de0d0;--sub:1}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{padding:14px max(4vw,14px) 10px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+h1{margin:0;font-size:clamp(20px,3.4vw,30px);line-height:1.1;background:linear-gradient(90deg,var(--pink),var(--teal));-webkit-background-clip:text;background-clip:text;color:transparent}
+header small{color:var(--muted)}
+main{max-width:1200px;margin:0 auto;padding:0 max(2vw,0px)}
+#stage{position:relative;width:100%;aspect-ratio:16/9;background:#000;container-type:inline-size;overflow:hidden}
+#stage iframe,#yt{position:absolute;inset:0;width:100%;height:100%;border:0}
+#sub{position:absolute;left:5%;right:5%;bottom:13%;text-align:center;pointer-events:none;z-index:2}
+#sub span{display:inline;padding:.12em .45em;border-radius:.25em;background:rgba(0,0,0,.62);color:#fff;
+  font-weight:600;font-size:calc(var(--sub) * clamp(14px,3.3cqw,46px));line-height:1.45;
+  -webkit-box-decoration-break:clone;box-decoration-break:clone;text-shadow:0 1px 2px #000}
+#sub span:empty{display:none}
+#closeFs{display:none;position:absolute;top:max(10px,env(safe-area-inset-top));right:max(10px,env(safe-area-inset-right));z-index:3;
+  width:44px;height:44px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;font-size:22px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:12px max(2vw,10px)}
+.bar button{min-height:44px;padding:0 14px;border-radius:10px;border:1px solid #3a3450;background:#1b1726;color:var(--ink);font:inherit;font-size:15px}
+.bar button:active{background:#2a2340}
+.bar .pri{background:var(--pink);border-color:var(--pink);color:#160812;font-weight:700}
+.bar .val{color:var(--muted);font-size:14px;min-width:4.5em;text-align:center}
+.spacer{flex:1}
+#status{color:var(--muted);font-size:13px;padding:0 max(2vw,10px) 24px}
+/* pseudo fullscreen (iPhone) */
+body.pfs{overflow:hidden}
+body.pfs #stage{position:fixed;inset:0;z-index:50;aspect-ratio:auto;width:100vw;height:100dvh;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+body.pfs #closeFs,#stage:fullscreen #closeFs{display:block}
+#stage:fullscreen{aspect-ratio:auto;width:100vw;height:100vh}
+@media (orientation:portrait){body.pfs #rotate{display:flex}}
+#rotate{display:none;position:fixed;inset:auto 0 0 0;z-index:60;justify-content:center;padding:10px;color:var(--muted);font-size:13px;pointer-events:none}
+</style>
+</head>
+<body>
+<header>
+  <h1>GTA 6 — Vietsub</h1>
+  <small>Full game · No commentary · Shirrako</small>
+</header>
+<main>
+  <div id="stage">
+    <div id="yt"></div>
+    <div id="sub"><span id="subText"></span></div>
+    <button id="closeFs" aria-label="Thoát toàn màn hình">✕</button>
+  </div>
+  <div class="bar">
+    <button class="pri" id="fsBtn">⛶ Toàn màn hình</button>
+    <button id="smaller" aria-label="Chữ nhỏ hơn">A−</button>
+    <span class="val" id="sizeVal">100%</span>
+    <button id="bigger" aria-label="Chữ to hơn">A+</button>
+    <span class="spacer"></span>
+    <button id="early" aria-label="Phụ đề sớm hơn">−0.5s</button>
+    <span class="val" id="offVal">lệch 0s</span>
+    <button id="late" aria-label="Phụ đề trễ hơn">+0.5s</button>
+  </div>
+  <div id="status">Đang tải…</div>
+</main>
+<div id="rotate">Xoay ngang điện thoại để xem to hơn</div>
+
+<script>
+{
+const VIDEO = 'Ve2M5i_DSKI';
+const KEY = 'gta6vs:';
+const $ = id => document.getElementById(id);
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(KEY+k); return v===null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(KEY+k, JSON.stringify(v)); }catch(e){} }
+};
+
+let subs = [];           // [{s, e, t}]
+let player = null, lastIdx = -1;
+let size = store.get('size', 1), offset = store.get('offset', 0);
+const resumeAt = store.get('pos', 0);
+
+function fmt(sec){ sec = Math.floor(sec); const h = Math.floor(sec/3600), m = Math.floor(sec%3600/60), s = sec%60;
+  return (h? h+':' : '') + String(m).padStart(h?2:1,'0') + ':' + String(s).padStart(2,'0'); }
+
+function applyPrefs(){
+  document.documentElement.style.setProperty('--sub', size);
+  $('sizeVal').textContent = Math.round(size*100) + '%';
+  $('offVal').textContent = 'lệch ' + (offset>0?'+':'') + offset.toFixed(1) + 's';
+}
+applyPrefs();
+
+fetch('subs-vi.json', {cache:'no-cache'}).then(r => r.json()).then(rows => {
+  subs = rows.map((r, i) => {
+    const next = rows[i+1] ? rows[i+1][0] : r[0] + 6;
+    return { s: r[0], e: Math.min(next, r[0] + 7), t: r[1] };
+  });
+  $('status').textContent = 'Đã tải ' + subs.filter(x => x.t).length + ' câu phụ đề.' + (resumeAt > 10 ? ' Tiếp tục từ ' + fmt(resumeAt) + '.' : '');
+}).catch(() => { $('status').textContent = 'Không tải được file phụ đề.'; });
+
+function find(t){
+  let lo = 0, hi = subs.length - 1, ans = -1;
+  while (lo <= hi){ const mid = (lo+hi) >> 1; if (subs[mid].s <= t){ ans = mid; lo = mid+1; } else hi = mid-1; }
+  return (ans >= 0 && t < subs[ans].e) ? ans : -1;
+}
+
+let saveTick = 0;
+function tick(){
+  if (player && player.getCurrentTime){
+    const t = player.getCurrentTime() - offset;
+    const i = find(t);
+    if (i !== lastIdx){ lastIdx = i; $('subText').textContent = i >= 0 ? subs[i].t : ''; }
+    if (++saveTick % 20 === 0 && player.getPlayerState && player.getPlayerState() === 1) store.set('pos', Math.floor(player.getCurrentTime()));
+  }
+}
+setInterval(tick, 150);
+
+window.onYouTubeIframeAPIReady = function(){
+  player = new YT.Player('yt', {
+    videoId: VIDEO,
+    playerVars: { playsinline: 1, rel: 0, iv_load_policy: 3, cc_load_policy: 0, fs: 0, start: resumeAt > 10 ? resumeAt : 0, origin: location.origin },
+    events: { onStateChange: e => { if (e.data === 2) store.set('pos', Math.floor(player.getCurrentTime())); } }
+  });
+};
+const tag = document.createElement('script'); tag.src = 'https://www.youtube.com/iframe_api'; document.head.appendChild(tag);
+
+// Fullscreen: real fullscreen where supported, CSS fullscreen on iPhone
+const stage = $('stage');
+function canRealFs(){ return !!(stage.requestFullscreen || stage.webkitRequestFullscreen) && !/iPhone|iPod/.test(navigator.userAgent); }
+function enterFs(){
+  if (canRealFs()){
+    const p = stage.requestFullscreen ? stage.requestFullscreen() : stage.webkitRequestFullscreen();
+    if (p && p.then) p.then(() => { try{ screen.orientation.lock('landscape').catch(()=>{}); }catch(e){} }).catch(() => document.body.classList.add('pfs'));
+  } else document.body.classList.add('pfs');
+}
+function exitFs(){
+  document.body.classList.remove('pfs');
+  if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(()=>{});
+  else if (document.webkitFullscreenElement && document.webkitExitFullscreen) document.webkitExitFullscreen();
+}
+$('fsBtn').addEventListener('click', enterFs);
+$('closeFs').addEventListener('click', exitFs);
+
+$('smaller').addEventListener('click', () => { size = Math.max(.6, +(size - .1).toFixed(2)); store.set('size', size); applyPrefs(); });
+$('bigger').addEventListener('click', () => { size = Math.min(2, +(size + .1).toFixed(2)); store.set('size', size); applyPrefs(); });
+$('early').addEventListener('click', () => { offset = +(offset - .5).toFixed(1); store.set('offset', offset); applyPrefs(); lastIdx = -2; });
+$('late').addEventListener('click', () => { offset = +(offset + .5).toFixed(1); store.set('offset', offset); applyPrefs(); lastIdx = -2; });
+}
+</script>
+</body>
+</html>
